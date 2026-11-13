@@ -1,0 +1,33 @@
+name: 规则技术面打分
+
+on:
+  schedule:
+    # 工作日北京时间 18:15（UTC 10:15），美股收盘后，主分析跑完之后
+    - cron: "15 10 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  rules-score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install requests pandas numpy
+      - name: Run rules scoring
+        env:
+          STOCK_LIST: ${{ vars.STOCK_LIST || secrets.STOCK_LIST }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
+        run: python rules_score.py
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rules-score
+          path: rules-score.md
+          if-no-files-found: ignore
